@@ -5,6 +5,6 @@
         public string RabbitUserName { get; set; }
         public string RabbitPassword { get; set; }
         public string RabbitExchangeName { get; set; }
-        public string DocumentServiceEndpoint { get; set; }
+        public string UserServiceEndpoint { get; set; }
     }
 }

@@ -9,7 +9,7 @@ namespace Ts.Business.ExternalClients {
         private readonly HttpClient _httpClient;
 
         public UserServiceClient() {
-            var documentServiceEndpoint = ConfigurationManager.AppSettings["DocumentServiceEndpoint"];
+            var documentServiceEndpoint = ConfigurationManager.AppSettings["UserServiceEndpoint"];
             _httpClient = new HttpClient {
                 BaseAddress = new Uri(documentServiceEndpoint)
             };

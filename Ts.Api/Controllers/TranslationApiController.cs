@@ -16,18 +16,12 @@ namespace Ts.Api.Controllers {
 
         [HttpGet, Route("getAverageDocumentPartCount")]
         public HttpResponseMessage GetAverageDocumentPartCount([FromUri] int orderId) {
-            var response = new HttpResponseMessage();
-
             ServiceResult serviceResult = _translationService.GetAverageDocumentPartCount(orderId);
             if (serviceResult.ServiceResultType != ServiceResultType.Success) {
-                response.StatusCode = HttpStatusCode.Forbidden;
-                response.Content = new ObjectContent(serviceResult.GetType(), serviceResult, Formatter);
-                return response;
+                return Error(serviceResult);
             }
 
-            response.StatusCode = HttpStatusCode.OK;
-            response.Content = new ObjectContent(serviceResult.GetType(), serviceResult, Formatter);
-            return response;
+            return OK(serviceResult);
         }
     }
 }

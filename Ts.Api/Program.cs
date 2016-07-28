@@ -3,22 +3,35 @@ using System.Configuration;
 using System.Reflection;
 using Autofac;
 using Autofac.Integration.WebApi;
+using log4net;
 using Microsoft.Owin.Hosting;
 using RabbitMQ.Client;
 using Tangent.CeviriDukkani.Data.Model;
 using Tangent.CeviriDukkani.Domain.Mappers;
+using Tangent.CeviriDukkani.Logging;
 using Tangent.CeviriDukkani.Messaging;
 using Tangent.CeviriDukkani.Messaging.Producer;
+using Ts.Business.ExternalClients;
+using Ts.Business.Services;
 
 namespace Ts.Api {
-    class Program {
+    public class Program {
         static void Main(string[] args) {
-            string baseAddress = "http://localhost:8000/";
+            string baseAddress = "http://localhost:8004/";
+
             Bootstrapper();
+            Console.WriteLine("Bootstrapper finished");
 
             var webApp = WebApp.Start<Startup>(url: baseAddress);
+            Console.WriteLine($"TS is ready in {baseAddress}");
+
             Container.Resolve<TsEventProjection>().Start();
+            Console.WriteLine("Projection started...");
             Console.ReadLine();
+
+            Console.WriteLine("Starting to close TS...");
+
+            CustomLogger.Logger.Info($"TS service is down with projections {DateTime.Today}");
 
             Container.Resolve<IConnection>().Close();
         }
@@ -26,6 +39,7 @@ namespace Ts.Api {
         public static void Bootstrapper() {
             var builder = new ContainerBuilder();
             builder.RegisterCommons();
+            builder.RegisterBusiness();
 
             var settings = builder.RegisterSettings();
             builder.RegisterEvents(settings);
@@ -34,6 +48,7 @@ namespace Ts.Api {
             builder.RegisterType<TsEventProjection>().AsSelf().SingleInstance();
 
             Container = builder.Build();
+            CustomLogger.Logger.Info($"TS service is up and ready with projections {DateTime.Today}");
         }
 
         public static IContainer Container { get; set; }
@@ -43,18 +58,18 @@ namespace Ts.Api {
         public static void RegisterCommons(this ContainerBuilder builder) {
 
             builder.RegisterType<CeviriDukkaniModel>().AsSelf().InstancePerLifetimeScope();
-            builder.RegisterType<CustomMapperConfiguration>().As<ICustomMapperConfiguration>().InstancePerLifetimeScope();
+            builder.RegisterType<CustomMapperConfiguration>().AsSelf().SingleInstance();
+            builder.RegisterInstance(CustomLogger.Logger).As<ILog>().SingleInstance();
         }
 
         public static void RegisterBusiness(this ContainerBuilder builder) {
-            //builder.RegisterType<DocumentServiceClient>().As<IDocumentServiceClient>().InstancePerLifetimeScope();
-            //builder.RegisterType<UserServiceClient>().As<IUserServiceClient>().InstancePerLifetimeScope();
-            //builder.RegisterType<OrderManagementService>().As<IOrderManagementService>().InstancePerLifetimeScope();
+            builder.RegisterType<UserServiceClient>().As<IUserServiceClient>().InstancePerLifetimeScope();
+            builder.RegisterType<TranslationService>().As<ITranslationService>().InstancePerLifetimeScope();
         }
 
         public static void RegisterEvents(this ContainerBuilder builder, Settings settings) {
             var connection = new RabbitMqConnectionFactory(settings.RabbitHost, settings.RabbitPort, settings.RabbitUserName, settings.RabbitPassword).CreateConnection();
-            var dispatcher = new RabbitMqDispatcherFactory(connection, settings.RabbitExchangeName).CreateDispatcher();
+            var dispatcher = new RabbitMqDispatcherFactory(connection, settings.RabbitExchangeName, CustomLogger.Logger).CreateDispatcher();
 
             builder.RegisterInstance<IConnection>(connection);
             builder.RegisterInstance<IDispatchCommits>(dispatcher);
@@ -67,7 +82,7 @@ namespace Ts.Api {
                 RabbitPassword = ConfigurationManager.AppSettings["RabbitPassword"],
                 RabbitPort = int.Parse(ConfigurationManager.AppSettings["RabbitPort"]),
                 RabbitUserName = ConfigurationManager.AppSettings["RabbitUserName"],
-                DocumentServiceEndpoint = ConfigurationManager.AppSettings["DocumentServiceEndpoint"]
+                UserServiceEndpoint = ConfigurationManager.AppSettings["UserServiceEndpoint"]
             };
 
             builder.RegisterInstance(settings);
