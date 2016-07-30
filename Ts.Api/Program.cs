@@ -33,7 +33,7 @@ namespace Ts.Api {
 
             CustomLogger.Logger.Info($"TS service is down with projections {DateTime.Today}");
 
-            Container.Resolve<IConnection>().Close();
+            //Container.Resolve<IConnection>().Close();
         }
 
         public static void Bootstrapper() {

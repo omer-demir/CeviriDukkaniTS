@@ -1,7 +1,9 @@
-﻿using System.Net;
+﻿using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Web.Http;
 using Tangent.CeviriDukkani.Domain.Common;
+using Tangent.CeviriDukkani.Domain.Dto.Translation;
 using Tangent.CeviriDukkani.WebCore.BaseControllers;
 using Ts.Business.Services;
 
@@ -17,6 +19,16 @@ namespace Ts.Api.Controllers {
         [HttpGet, Route("getAverageDocumentPartCount")]
         public HttpResponseMessage GetAverageDocumentPartCount([FromUri] int orderId) {
             ServiceResult serviceResult = _translationService.GetAverageDocumentPartCount(orderId);
+            if (serviceResult.ServiceResultType != ServiceResultType.Success) {
+                return Error(serviceResult);
+            }
+
+            return OK(serviceResult);
+        }
+
+        [HttpPost, Route("saveTranslationOperations")]
+        public HttpResponseMessage SaveTranslationOperations([FromBody]List<TranslationOperationDto> translationOperations) {
+            ServiceResult serviceResult = _translationService.SaveTranslationOperations(translationOperations);
             if (serviceResult.ServiceResultType != ServiceResultType.Success) {
                 return Error(serviceResult);
             }

@@ -12,8 +12,8 @@ namespace Ts.Api {
             _settings = settings;
             _consumer = new RabbitMqSubscription(connection, settings.RabbitExchangeName, logger);
             _consumer
-                .WithAppName("ts-projection")
-                .WithEvent<CreateOrderDetailEvent>(Handle);
+                .WithAppName("ts-projection");
+            //.WithEvent<CreateOrderDetailEvent>(Handle);
         }
 
         public void Start() {
