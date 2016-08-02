@@ -54,8 +54,8 @@ namespace Ts.Business.Services {
             return serviceResult;
         }
 
-        public ServiceResult SaveTranslationOperations(List<TranslationOperationDto> translationOperations) {
-            var serviceResult = new ServiceResult(ServiceResultType.NotKnown);
+        public ServiceResult<List<TranslationOperationDto>> SaveTranslationOperations(List<TranslationOperationDto> translationOperations) {
+            var serviceResult = new ServiceResult<List<TranslationOperationDto>>();
             try {
                 var translationOperationItems =
                     translationOperations.Select(
@@ -69,7 +69,7 @@ namespace Ts.Business.Services {
                 }
 
                 serviceResult.ServiceResultType = ServiceResultType.Success;
-                serviceResult.Data = translationOperationItems.Select(a => _mapper.GetMapDto<TranslationOperationDto, TranslationOperation>(a));
+                serviceResult.Data = translationOperationItems.Select(a => _mapper.GetMapDto<TranslationOperationDto, TranslationOperation>(a)).ToList();
             } catch (Exception exc) {
                 _logger.Error($"Error occured in {MethodBase.GetCurrentMethod()} with message {exc.Message}");
                 serviceResult.ServiceResultType = ServiceResultType.Fail;

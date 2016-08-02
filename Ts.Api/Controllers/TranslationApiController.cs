@@ -28,7 +28,7 @@ namespace Ts.Api.Controllers {
 
         [HttpPost, Route("saveTranslationOperations")]
         public HttpResponseMessage SaveTranslationOperations([FromBody]List<TranslationOperationDto> translationOperations) {
-            ServiceResult serviceResult = _translationService.SaveTranslationOperations(translationOperations);
+            ServiceResult<List<TranslationOperationDto>> serviceResult = _translationService.SaveTranslationOperations(translationOperations);
             if (serviceResult.ServiceResultType != ServiceResultType.Success) {
                 return Error(serviceResult);
             }
