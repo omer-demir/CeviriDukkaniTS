@@ -47,7 +47,7 @@ namespace Ts.Business.Services {
                     throw translatorServiceResult.Exception;
                 }
 
-                var translators = JsonConvert.DeserializeObject<List<UserDto>>(translatorServiceResult.Data.ToString());
+                var translators = translatorServiceResult.Data;
                 var translatorsId = translators.Select(a => a.Id);
                 var ceiledNumber = GetAverateUserRating(translatorsId);
 
