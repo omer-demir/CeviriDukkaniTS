@@ -300,12 +300,56 @@ namespace Ts.Business.Services {
             return serviceResult;
         }
 
+        public ServiceResult GetTranslatedContentForEditor(int translationDocumentPartId, int editorId) {
+            var serviceResult = new ServiceResult();
+            try {
+                var translationOperationItem =
+                    _model.TranslationOperations.FirstOrDefault(
+                        a => a.EditorId == editorId && a.TranslationDocumentPartId == translationDocumentPartId);
+
+                if (translationOperationItem == null) {
+                    throw new BusinessException(ExceptionCodes.NoRelatedData);
+                }
+
+                serviceResult.ServiceResultType = ServiceResultType.Success;
+                serviceResult.Data = translationOperationItem.TranslatedContent;
+            } catch (Exception exc) {
+                _logger.Error($"Error occured in {MethodBase.GetCurrentMethod()} with message {exc.Message}");
+                serviceResult.ServiceResultType = ServiceResultType.Fail;
+                serviceResult.Exception = exc;
+            }
+
+            return serviceResult;
+        }
+
         public ServiceResult GetEditedContent(int translationDocumentPartId, int editorId) {
             var serviceResult = new ServiceResult();
             try {
                 var translationOperationItem =
                     _model.TranslationOperations.FirstOrDefault(
                         a => a.EditorId == editorId && a.TranslationDocumentPartId == translationDocumentPartId);
+
+                if (translationOperationItem == null) {
+                    throw new BusinessException(ExceptionCodes.NoRelatedData);
+                }
+
+                serviceResult.ServiceResultType = ServiceResultType.Success;
+                serviceResult.Data = translationOperationItem.EditedContent;
+            } catch (Exception exc) {
+                _logger.Error($"Error occured in {MethodBase.GetCurrentMethod()} with message {exc.Message}");
+                serviceResult.ServiceResultType = ServiceResultType.Fail;
+                serviceResult.Exception = exc;
+            }
+
+            return serviceResult;
+        }
+
+        public ServiceResult GetEditedContentForProofReader(int translationDocumentPartId, int proofReaderId) {
+            var serviceResult = new ServiceResult();
+            try {
+                var translationOperationItem =
+                    _model.TranslationOperations.FirstOrDefault(
+                        a => a.ProofReaderId == proofReaderId && a.TranslationDocumentPartId == translationDocumentPartId);
 
                 if (translationOperationItem == null) {
                     throw new BusinessException(ExceptionCodes.NoRelatedData);
@@ -506,8 +550,88 @@ namespace Ts.Business.Services {
                     throw new BusinessException(ExceptionCodes.UnableToUpdate);
                 }
 
+
+                var order = _model.OrderDetails.Include(a => a.TranslationOperation).FirstOrDefault(a => a.TranslationOperation.TranslationDocumentPartId == translationDocumentPartId);
+                if (order == null) {
+                    throw new BusinessException(ExceptionCodes.NoRelatedData);
+                }
+
+                var orderDetails =
+                    _model.Orders.Include(a => a.OrderDetails.Select(b => b.TranslationOperation))
+                        .FirstOrDefault(a => a.Id == order.Id);
+
+                if (orderDetails.OrderDetails.Count(a => a.TranslationOperation.TranslationProgressStatusId == (int)TranslationProgressStatusEnum.ProofReaderDone) == orderDetails.OrderDetails.Count) {
+                    _dispatcher.Dispatch(new List<EventMessage> {
+                    new UpdateOrderStatusEvent {
+                        Id = Guid.NewGuid(),
+                        StatusId = (int)OrderStatusEnum.RevisionNeeded,
+                        TranslationOperationId = translationOperationItem.Id
+                    }.ToEventMessage()
+                    });
+                }
+
                 serviceResult.ServiceResultType = ServiceResultType.Success;
                 serviceResult.Data = true;
+            } catch (Exception exc) {
+                _logger.Error($"Error occured in {MethodBase.GetCurrentMethod()} with message {exc.Message}");
+                serviceResult.ServiceResultType = ServiceResultType.Fail;
+                serviceResult.Exception = exc;
+            }
+
+            return serviceResult;
+        }
+
+        public ServiceResult<List<TranslationOperationDto>> GetAssignedJobsAsTranslator(int translatorId) {
+            var serviceResult = new ServiceResult<List<TranslationOperationDto>>();
+            try {
+                var translationOperations = _model.TranslationOperations
+                    .Include(a => a.TranslationProgressStatus)
+                    .Include(a => a.TranslationDocumentPart)
+                    .Include(a => a.TranslationOperationStatus)
+                    .Where(a => a.TranslatorId == translatorId).ToList();
+
+                serviceResult.ServiceResultType = ServiceResultType.Success;
+                serviceResult.Data = translationOperations.Select(a=> _mapper.GetMapDto<TranslationOperationDto, TranslationOperation>(a)).ToList();
+            } catch (Exception exc) {
+                _logger.Error($"Error occured in {MethodBase.GetCurrentMethod()} with message {exc.Message}");
+                serviceResult.ServiceResultType = ServiceResultType.Fail;
+                serviceResult.Exception = exc;
+            }
+
+            return serviceResult;
+        }
+
+        public ServiceResult<List<TranslationOperationDto>> GetAssignedJobsAsEditor(int editorId) {
+            var serviceResult = new ServiceResult<List<TranslationOperationDto>>();
+            try {
+                var translationOperations = _model.TranslationOperations
+                    .Include(a => a.TranslationProgressStatus)
+                    .Include(a => a.TranslationDocumentPart)
+                    .Include(a => a.TranslationOperationStatus)
+                    .Where(a => a.EditorId == editorId).ToList();
+
+                serviceResult.ServiceResultType = ServiceResultType.Success;
+                serviceResult.Data = translationOperations.Select(a => _mapper.GetMapDto<TranslationOperationDto, TranslationOperation>(a)).ToList();
+            } catch (Exception exc) {
+                _logger.Error($"Error occured in {MethodBase.GetCurrentMethod()} with message {exc.Message}");
+                serviceResult.ServiceResultType = ServiceResultType.Fail;
+                serviceResult.Exception = exc;
+            }
+
+            return serviceResult;
+        }
+
+        public ServiceResult<List<TranslationOperationDto>> GetAssignedJobsAsProofReader(int proofReaderId) {
+            var serviceResult = new ServiceResult<List<TranslationOperationDto>>();
+            try {
+                var translationOperations = _model.TranslationOperations
+                    .Include(a => a.TranslationProgressStatus)
+                    .Include(a => a.TranslationDocumentPart)
+                    .Include(a => a.TranslationOperationStatus)
+                    .Where(a => a.ProofReaderId == proofReaderId).ToList();
+
+                serviceResult.ServiceResultType = ServiceResultType.Success;
+                serviceResult.Data = translationOperations.Select(a => _mapper.GetMapDto<TranslationOperationDto, TranslationOperation>(a)).ToList();
             } catch (Exception exc) {
                 _logger.Error($"Error occured in {MethodBase.GetCurrentMethod()} with message {exc.Message}");
                 serviceResult.ServiceResultType = ServiceResultType.Fail;
