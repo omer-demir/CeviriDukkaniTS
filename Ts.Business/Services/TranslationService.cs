@@ -557,7 +557,7 @@ namespace Ts.Business.Services {
                 }
 
                 var orderDetails =
-                    _model.Orders.Include(a => a.OrderDetails.Select(b => b.TranslationOperation))
+                    _model.TranslatingOrders.Include(a => a.OrderDetails.Select(b => b.TranslationOperation))
                         .FirstOrDefault(a => a.Id == order.Id);
 
                 if (orderDetails.OrderDetails.Count(a => a.TranslationOperation.TranslationProgressStatusId == (int)TranslationProgressStatusEnum.ProofReaderDone) == orderDetails.OrderDetails.Count) {
